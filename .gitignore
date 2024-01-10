@@ -155,5 +155,3 @@ cython_debug/
 # config
 config.ini
 
-# input samples
-log_samples

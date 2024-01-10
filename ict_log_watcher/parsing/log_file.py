@@ -110,7 +110,6 @@ class IctLogParser:
         return self.log_str
 
 
-def file_to_tree(log_file_path:str, out_tree:Node) -> Node:
+def file_to_tree(log_file_path:str, out_tree:Node):
     ict_log_parser = IctLogParser(log_file_path)
     ict_log_parser.build_tree(out_tree)
-    return out_tree

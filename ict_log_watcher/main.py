@@ -22,10 +22,10 @@ def main():
         )
         ted.connect()
 
-        root = Node('root')
 
         #callable to handle new ict log files
         def on_new_ict_log(log_path:str):
+            root = Node('root')
             time.sleep(3) #app needs to wait 3 seconds for the watcher to stop using the new file
             file_to_tree(log_path, root)
             uut_results = extract_result(root)

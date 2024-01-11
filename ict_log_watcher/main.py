@@ -10,31 +10,32 @@ import time
 
 def main():
 
-    #test equipment database manager
-    ted = DbManager( 
-        server,
-        database,
-        user,
-        password
-    )
-    ted.connect()
+    logger = get_logger(__name__)
 
-    root = Node('root')
+    try:
+        #test equipment database manager
+        ted = DbManager( 
+            server,
+            database,
+            user,
+            password
+        )
+        ted.connect()
 
-    #callable to handle new ict log files
-    def on_new_ict_log(log_path:str):
-        time.sleep(3) #app needs to wait 3 seconds for the watcher to stop using the new file
-        file_to_tree(log_path, root)
-        uut_results = extract_result(root)
-        ted.insert(results_table_name, uut_results)
+        root = Node('root')
 
+        #callable to handle new ict log files
+        def on_new_ict_log(log_path:str):
+            time.sleep(3) #app needs to wait 3 seconds for the watcher to stop using the new file
+            file_to_tree(log_path, root)
+            uut_results = extract_result(root)
+            ted.insert(results_table_name, uut_results)
 
+        ict_log_watcher = IctLogWatcher(ict_logs_path, on_new_ict_log)
+        ict_log_watcher.start()
 
-
-    ict_log_watcher = IctLogWatcher(ict_logs_path, on_new_ict_log)
-    ict_log_watcher.start()
-
-    print("code after watcher start")
+    except Exception as e:
+        logger.error(e)
 
 
 if __name__ == "__main__":

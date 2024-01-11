@@ -36,7 +36,7 @@ class DbManager:
             self.conn = pyodbc.connect(self.conn_str)
             self.connected =  True
         except Error as e:
-            self.logger.error(f"Couldn't connect. connection string: {self.conn_str}")
+            self.logger.error(f"Couldn't connect. connection string: {self.conn_str}, error: {e}")
             self.connected = False
         
     def disconnect(self):
@@ -53,8 +53,8 @@ class DbManager:
             cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table}'")
             columns = cursor.fetchall()
             return [col[0] for col in columns]
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
+        except Error as e:
+            self.logger.error(f"{e}")
 
             
     def insert(self, table_name:str, data:list):
@@ -63,24 +63,26 @@ class DbManager:
         `data` is a list containing the values to be inserted.
         The order of the values should correspond to the table's column order.
         """
-        if not self.conn:
-            self.logger.warn("There is no database connection.")
-            return
-        
-        # Replace 'nan' with 'None'
-        data = [None if pd.isna(val) else val for val in data]
-        
-        column_names = self._get_column_names(table_name)
-        placeholders = ', '.join('?' * len(column_names))
-        sql = f'INSERT INTO {table_name} VALUES ({placeholders})'
-        
-        self.logger.debug(f"insert sql query: {sql}")
-        
-        cursor = self.conn.cursor()
-        cursor.execute(sql, tuple(data))
-        self.conn.commit()
-        self.logger.debug(f"Data: {data} inserted at {self.server}:{self.database}:{table_name}")
-    
+        try:
+            if not self.conn:
+                self.logger.warn("There is no database connection.")
+                return
+            
+            # Replace 'nan' with 'None'
+            data = [None if pd.isna(val) else val for val in data]
+            
+            column_names = self._get_column_names(table_name)
+            placeholders = ', '.join('?' * len(column_names))
+            sql = f'INSERT INTO {table_name} VALUES ({placeholders})'
+            
+            self.logger.debug(f"insert sql query: {sql}")
+            
+            cursor = self.conn.cursor()
+            cursor.execute(sql, tuple(data))
+            self.conn.commit()
+            self.logger.debug(f"Data: {data} inserted at {self.server}:{self.database}:{table_name}")
+        except Error as e:
+            self.logger.error(e)
 
     def get_data(self, table, condition=None):
         """

@@ -12,25 +12,34 @@ class IctLogWatcher:
         self.logger = get_logger(__name__, __class__.__name__)
 
     def start(self):
-        self.observer.schedule(self.event_handler, self.watch_directory, recursive=False)
-        self.observer.start()
-        
         try:
-            while True:
-                #TODO trigger event to stop watchdog
-                time.sleep(5)
-        except KeyboardInterrupt:
-            self.observer.stop()
-        self.observer.join()
+            self.observer.schedule(self.event_handler, self.watch_directory, recursive=False)
+            self.observer.start()
+            
+            try:
+                while True:
+                    #TODO trigger event to stop watchdog
+                    time.sleep(5)
+            except KeyboardInterrupt:
+                self.observer.stop()
+            self.observer.join()
+        except Exception as e:
+            self.logger.debug(f"directory that caused the error: {self.watch_directory}")
+            self.logger.error(e)
 
 class IctLogHandler(FileSystemEventHandler):
     def __init__(self, on_new_log):
         self.on_new_log = on_new_log
+        self.logger = get_logger(__name__, __class__.__name__)
 
     def on_created(self, event:FileSystemEvent):
-        if event.is_directory:
-            return None
+        try:
+            if event.is_directory:
+                return None
 
-        if event.event_type == EVENT_TYPE_CREATED or event.event_type == EVENT_TYPE_MODIFIED:
-            self.on_new_log(event.src_path)
+            if event.event_type == EVENT_TYPE_CREATED or event.event_type == EVENT_TYPE_MODIFIED:
+                self.on_new_log(event.src_path)
+        except Exception as e:
+            self.logger.debug(f"event that raised exeption: {event}")
+            self.logger.error(e)
 

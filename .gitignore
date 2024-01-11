@@ -155,3 +155,11 @@ cython_debug/
 # config
 config.ini
 
+# app logs
+logs
+
+# Ignorar toda la carpeta
+log_samples/*
+
+# Permitir archivo_important.txt
+!log_samples/sample_ict_log

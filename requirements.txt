@@ -1,0 +1,4 @@
+anytree==2.12.1
+pandas==1.5.3
+pyodbc==4.0.35
+watchdog==3.0.0

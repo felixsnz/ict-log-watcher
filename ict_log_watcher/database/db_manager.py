@@ -1,6 +1,5 @@
 import pyodbc
 import pandas as pd
-from pyodbc import Error
 from utils.logger import get_logger
 import platform
 
@@ -27,24 +26,35 @@ class DbManager:
         # Create the connection string
         self.conn_str = f'DRIVER={{{driver}}};SERVER={self.server};PORT=1433;DATABASE={self.database};UID={self.user};PWD={self.password};TDS_Version=7.3'
         
-        self.connected = False
         self.conn = None
         self.logger = get_logger(__name__)
+
+    
+    @property
+    def connected(self):
+        """ Checks if the database connection is still valid. """
+        if not self.conn:
+            return False
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT 1")  # A simple query
+            return True
+        except Exception as e:
+            self.logger.error(f"The database connection has been lost: {e}")
+            return False
+
 
     def connect(self):
         try:
             self.conn = pyodbc.connect(self.conn_str)
-            self.connected =  True
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"Couldn't connect. connection string: {self.conn_str}, error: {e}")
-            self.connected = False
         
     def disconnect(self):
         """ close the database connection """
         if self.conn:
             self.conn.close()
             self.conn = None
-            self.connected = False
 
     def _get_column_names(self, table):
         """ retrieve the column names of a table """
@@ -53,8 +63,9 @@ class DbManager:
             cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{table}'")
             columns = cursor.fetchall()
             return [col[0] for col in columns]
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"{e}")
+            return None
 
             
     def insert(self, table_name:str, data:list):
@@ -66,23 +77,26 @@ class DbManager:
         try:
             if not self.conn:
                 self.logger.warn("There is no database connection.")
-                return
+                return None
             
             # Replace 'nan' with 'None'
             data = [None if pd.isna(val) else val for val in data]
             
             column_names = self._get_column_names(table_name)
-            placeholders = ', '.join('?' * len(column_names))
-            sql = f'INSERT INTO {table_name} VALUES ({placeholders})'
-            
-            self.logger.debug(f"insert sql query: {sql}")
-            
-            cursor = self.conn.cursor()
-            cursor.execute(sql, tuple(data))
-            self.conn.commit()
-            self.logger.debug(f"Data: {data} inserted at {self.server}:{self.database}:{table_name}")
-        except Error as e:
+            if column_names != None:
+                placeholders = ', '.join('?' * len(column_names))
+                sql = f'INSERT INTO {table_name} VALUES ({placeholders})'
+                
+                self.logger.debug(f"insert sql query: {sql}")
+                
+                cursor = self.conn.cursor()
+                cursor.execute(sql, tuple(data))
+                self.conn.commit()
+            else:
+                self.logger.warning(f"couldn't fetch column names")
+        except Exception as e:
             self.logger.error(e)
+            return None
 
     def get_data(self, table, condition=None):
         """
@@ -93,7 +107,7 @@ class DbManager:
         """
         if not self.conn:
             self.logger.warn("There is no database connection.")
-            return
+            return None
 
         cursor = self.conn.cursor()
 
@@ -107,8 +121,9 @@ class DbManager:
             rows = cursor.fetchall()
             self.logger.info(f"Fetched data: '{rows}' from {self.server}:{self.database}:{table}")
             return rows
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"Couldn't fetch data. Error: {str(e)}")
+            return None
     
     def get_column_values(self, table, column, condition=None):
         """
@@ -135,8 +150,9 @@ class DbManager:
             rows = cursor.fetchall()
             self.logger.info(f"Fetched data: '{rows}' from {self.server}:{self.database}:{table}")
             return [row[0] for row in rows]
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"Couldn't fetch data. Error: {str(e)}")
+            return None
 
     def get_table_names(self):
         """ Retrieve the table names of the database """
@@ -150,8 +166,9 @@ class DbManager:
             cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'")
             tables = cursor.fetchall()
             return [table[0] for table in tables]
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"Couldn't fetch table names. Error: {str(e)}")
+            return None
     
     def row_exists_by(self, table, column_name, value):
         """
@@ -178,6 +195,6 @@ class DbManager:
             count = cursor.fetchone()[0]
             exists = count > 0
             return exists
-        except Error as e:
+        except Exception as e:
             self.logger.error(f"Couldn't execute query. Error: {str(e)}")
-            return False
+            return None

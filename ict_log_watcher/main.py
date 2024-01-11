@@ -1,10 +1,13 @@
+# internal modules
 from watching.watcher import IctLogWatcher
-from anytree import Node
 from utils.logger import get_logger
 from utils.config import results_table_name, ict_logs_path, server, database, user, password
 from parsing.log_file import file_to_tree
-from parsing.node import extract_result
+from parsing.node import extract_result 
 from database.db_manager import DbManager
+
+# external modules
+from anytree import Node
 import time
 
 
@@ -22,9 +25,14 @@ def main():
         )
         ted.connect()
 
-
         #callable to handle new ict log files
         def on_new_ict_log(log_path:str):
+
+            while not ted.connected:
+                logger.warning(f"there isn't '{server}' server connection")
+                time.sleep(60 * 5) #waits 5 minutes to try reconnect
+                ted.connect()
+
             root = Node('root')
             time.sleep(3) #app needs to wait 3 seconds for the watcher to stop using the new file
             file_to_tree(log_path, root)
@@ -33,6 +41,7 @@ def main():
 
         ict_log_watcher = IctLogWatcher(ict_logs_path, on_new_ict_log)
         ict_log_watcher.start()
+
 
     except Exception as e:
         logger.error(e)

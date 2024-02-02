@@ -1,6 +1,4 @@
 from anytree import Node
-from pandas import DataFrame
-import pandas as pd
 from datetime import datetime
 
 from utils.logger import get_logger

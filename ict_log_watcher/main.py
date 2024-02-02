@@ -1,4 +1,4 @@
-# internal modules
+# internal ibraries
 from watching.watcher import IctLogWatcher
 from utils.logger import get_logger
 from utils.config import results_table_name, ict_logs_path, server, database, user, password
@@ -6,8 +6,10 @@ from parsing.log_file import file_to_tree
 from parsing.node import extract_result 
 from database.db_manager import DbManager
 
-# external modules
+# external libraries
 from anytree import Node
+
+# standard libraries
 import time
 
 
@@ -41,6 +43,7 @@ def main():
 
         ict_log_watcher = IctLogWatcher(ict_logs_path, on_new_ict_log)
         ict_log_watcher.start()
+        logger.info("ict watcher starting...")
 
 
     except Exception as e:
